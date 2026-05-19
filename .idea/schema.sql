@@ -1,72 +1,143 @@
 create table `character`
 (
-    name          varchar(50)                                              not null
-        primary key,
-    level         tinyint                                                  null,
-    constellation tinyint                                                  null,
-    canHandle     enum ('Sword', 'Claymore', 'Polearm', 'Catalyst', 'Bow') null,
-    check (`level` between 1 and 90),
-    check (`constellation` between 0 and 6)
+	name varchar(50) not null
+		primary key,
+	level tinyint null,
+	constellation tinyint null,
+	canHandle enum('Sword', 'Claymore', 'Polearm', 'Catalyst', 'Bow') null,
+	check (`level` between 1 and 90),
+	check (`constellation` between 0 and 6)
 );
 
 create table artifact
 (
-    id            int auto_increment
-        primary key,
-    `set`         varchar(50)                                                                                                                                                                                                           null,
-    level         tinyint                                                                                                                                                                                                               null,
-    rarity        tinyint                                                                                                                                                                                                               null,
-    slot          enum ('Flower', 'Plume', 'Sands', 'Goblet', 'Circlet')                                                                                                                                                                null,
-    mainStatType  enum ('HP', 'HP%', 'ATK', 'ATK%', 'DEF%', 'EM', 'ER%', 'PHYSICAL_DMG%', 'PYRO_DMG%', 'HYDRO_DMG%', 'ELECTRO_DMG%', 'CRYO_DMG%', 'DENDRO_DMG%', 'GEO_DMG%', 'ANEMO_DMG%', 'CRIT_RATE%', 'CRIT_DMG%', 'HEALING_BONUS%') null,
-    mainStatValue decimal(6, 2)                                                                                                                                                                                                         null,
-    equippedBy    varchar(50)                                                                                                                                                                                                           null,
-    constraint artifact_ibfk_1
-        foreign key (equippedBy) references `character` (name)
-            on delete set null,
-    check (`level` between 0 and 20),
-    check (`rarity` between 4 and 5),
-    check (`mainStatValue` > 0)
+	id int auto_increment
+		primary key,
+	`set` varchar(50) null,
+	level tinyint null,
+	rarity tinyint null,
+	slot enum('Flower', 'Plume', 'Sands', 'Goblet', 'Circlet') null,
+	mainStatType enum('HP', 'HP%', 'ATK', 'ATK%', 'DEF%', 'EM', 'ER%', 'PHYSICAL_DMG%', 'PYRO_DMG%', 'HYDRO_DMG%', 'ELECTRO_DMG%', 'CRYO_DMG%', 'DENDRO_DMG%', 'GEO_DMG%', 'ANEMO_DMG%', 'CRIT_RATE%', 'CRIT_DMG%', 'HEALING_BONUS%') null,
+	mainStatValue decimal(6,2) null,
+	equippedBy varchar(50) null,
+	constraint artifact_ibfk_1
+		foreign key (equippedBy) references `character` (name)
+			on delete set null,
+	check (`level` between 0 and 20),
+	check (`rarity` between 4 and 5),
+	check (`mainStatValue` > 0)
 );
 
 create index equippedBy
-    on artifact (equippedBy);
+	on artifact (equippedBy);
+
+create definer = root@localhost trigger canInsertArtifact
+	before insert
+	on artifact
+	for each row
+	BEGIN
+        CALL validateArtifact(NEW.slot, NEW.mainStatType);
+        IF NEW.rarity = 4 AND NEW.level > 16 THEN
+            SIGNAL SQLSTATE '45009' SET MESSAGE_TEXT = 'ERROR: Cannot insert artifact. Cause: 4* artifacts can level up to level 16';
+        END IF;
+        IF NEW.equippedBy IS NOT NULL THEN
+            CALL canBeEquippedCheck(NEW.equippedBy, NEW.id);
+        END IF;
+    END;
+
+create definer = root@localhost trigger canUpdateArtifact
+	before update
+	on artifact
+	for each row
+	BEGIN
+        IF NEW.mainStatType <> OLD.mainStatType THEN
+            SIGNAL SQLSTATE '45008' SET MESSAGE_TEXT = 'ERROR: Cannot update artifact. Cause: Cannot modify Main Stat Type of an existing artifact';
+        END IF;
+        IF NEW.rarity = 4 AND NEW.level > 16 THEN
+            SIGNAL SQLSTATE '45010' SET MESSAGE_TEXT = 'ERROR: Cannot update artifact. Cause: 4* artifacts can level up to level 16';
+        END IF;
+        IF NEW.equippedBy IS NOT NULL AND (OLD.equippedBy IS NULL OR NEW.equippedBy <> OLD.equippedBy) THEN
+            CALL canBeEquippedCheck(NEW.equippedBy, NEW.id);
+        END IF;
+    END;
 
 create table artifactsubstat
 (
-    id           int                                                                                      not null,
-    substatType  enum ('HP', 'HP%', 'ATK', 'ATK%', 'DEF', 'DEF%', 'EM', 'ER%', 'CRIT_RATE%', 'CRIT_DMG%') not null,
-    substatValue decimal(5, 2)                                                                            null,
-    primary key (id, substatType),
-    constraint artifactsubstat_ibfk_1
-        foreign key (id) references artifact (id)
-            on delete cascade,
-    check (`substatValue` > 0)
+	id int not null,
+	substatType enum('HP', 'HP%', 'ATK', 'ATK%', 'DEF', 'DEF%', 'EM', 'ER%', 'CRIT_RATE%', 'CRIT_DMG%') not null,
+	substatValue decimal(5,2) null,
+	primary key (id, substatType),
+	constraint artifactsubstat_ibfk_1
+		foreign key (id) references artifact (id)
+			on delete cascade,
+	check (`substatValue` > 0)
 );
+
+create definer = root@localhost trigger addSubstatI
+	before insert
+	on artifactsubstat
+	for each row
+	BEGIN
+        call validateSubstat(NEW.id, NEW.substatType);
+    END;
+
+create definer = root@localhost trigger updateSubstat
+	before update
+	on artifactsubstat
+	for each row
+	BEGIN
+        call validateSubstat(NEW.id, NEW.substatType);
+    END;
 
 create table weapon
 (
-    id         int auto_increment
-        primary key,
-    name       varchar(50)                                                                           null,
-    rarity     tinyint                                                                               null,
-    refined    tinyint                                                                               null,
-    type       enum ('Sword', 'Claymore', 'Polearm', 'Catalyst', 'Bow')                              null,
-    statType   enum ('HP%', 'ATK%', 'DEF%', 'EM', 'ER%', 'PHYSICAL_DMG%', 'CRIT_RATE%', 'CRIT_DMG%') null,
-    statValue  decimal(5, 2)                                                                         null,
-    equippedBy varchar(50)                                                                           null,
-    constraint weapon_ibfk_1
-        foreign key (equippedBy) references `character` (name)
-            on delete set null,
-    check (`rarity` between 1 and 5),
-    check (`refined` between 1 and 5),
-    check (`statValue` > 0)
+	id int auto_increment
+		primary key,
+	name varchar(50) null,
+	rarity tinyint null,
+	refined tinyint null,
+	type enum('Sword', 'Claymore', 'Polearm', 'Catalyst', 'Bow') null,
+	statType enum('HP%', 'ATK%', 'DEF%', 'EM', 'ER%', 'PHYSICAL_DMG%', 'CRIT_RATE%', 'CRIT_DMG%') null,
+	statValue decimal(5,2) null,
+	equippedBy varchar(50) null,
+	constraint weapon_ibfk_1
+		foreign key (equippedBy) references `character` (name)
+			on delete set null,
+	check (`rarity` between 1 and 5),
+	check (`refined` between 1 and 5),
+	check (`statValue` > 0)
 );
 
 create index equippedBy
-    on weapon (equippedBy);
+	on weapon (equippedBy);
 
-create
-    definer = root@localhost procedure canBeEquippedCheck(IN equippingToCharacter varchar(50), IN artifactToEquip int)
+create definer = root@localhost trigger canEquipWeaponInsert
+	before insert
+	on weapon
+	for each row
+	BEGIN
+        IF new.equippedBy IS NOT NULL THEN
+            CALL weaponHandleChecker(NEW.equippedBy, NEW.type);
+        END IF;
+        IF (SELECT count(*) FROM weapon WHERE equippedBy = NEW.equippedBy) >= 1 THEN
+            SIGNAL SQLSTATE '45006' SET MESSAGE_TEXT = 'ERROR: Character cannot equip this weapon. Cause Character already has a weapon equipped.';
+        END IF;
+    END;
+
+create definer = root@localhost trigger canEquipWeaponUpdate
+	before update
+	on weapon
+	for each row
+	BEGIN
+        IF NEW.equippedBy IS NOT NULL AND (OLD.equippedBy IS NULL OR NEW.equippedBy <> OLD.equippedBy) THEN
+                CALL weaponHandleChecker(NEW.equippedBy, NEW.type);
+            END IF;
+        IF (SELECT count(*) FROM weapon WHERE NEW.equippedBy = equippedBy AND id <> NEW.id) >= 1 THEN
+            SIGNAL SQLSTATE '45006' SET MESSAGE_TEXT = 'ERROR: Character cannot equip this weapon. Cause Character already has a weapon equipped.';
+        END IF;
+    END;
+
+create definer = root@localhost procedure canBeEquippedCheck(IN equippingToCharacter varchar(50), IN artifactToEquip int)
 BEGIN
         DECLARE artifactSlot varchar(20);
         SELECT slot INTO artifactSlot FROM artifact
@@ -76,8 +147,7 @@ BEGIN
         END IF;
     END;
 
-create
-    definer = root@localhost function getArtifactCV(artifactID int) returns decimal(5, 2) deterministic
+create definer = root@localhost function getArtifactCV(artifactID int) returns decimal(5,2) deterministic
 BEGIN
         DECLARE critDamage decimal(5,2) default 0.00;
         DECLARE critRate decimal(5,2) default 0.00;
@@ -88,8 +158,7 @@ BEGIN
         RETURN critRate*2 + critDamage;
     END;
 
-create
-    definer = root@localhost procedure validateArtifact(IN artifactSlot varchar(20), IN slotType varchar(20))
+create definer = root@localhost procedure validateArtifact(IN artifactSlot varchar(20), IN slotType varchar(20))
 BEGIN
         DECLARE allowedSands varchar(50) DEFAULT 'HP%,ATK%,DEF%,EM,ER%';
         DECLARE allowedGoblet varchar(150) DEFAULT 'HP%,ATK%,DEF%,EM,PHYSICAL_DMG%,PYRO_DMG%,HYDRO_DMG%,ELECTRO_DMG%,CRYO_DMG%,DENDRO_DMG%,GEO_DMG%,ANEMO_DMG%';
@@ -118,8 +187,7 @@ BEGIN
         END CASE;
     END;
 
-create
-    definer = root@localhost procedure validateSubstat(IN toArtifact int, IN substatToAdd varchar(20))
+create definer = root@localhost procedure validateSubstat(IN toArtifact int, IN substatToAdd varchar(20))
 BEGIN
         DECLARE mainStat varchar(20);
         IF (SELECT count(*) FROM artifactsubstat WHERE id = toArtifact) >= 4 THEN
@@ -134,9 +202,7 @@ BEGIN
         END IF;
     END;
 
-create
-    definer = root@localhost procedure weaponHandleChecker(IN equippingToCharacter varchar(50),
-                                                           IN weaponTypeToEquip varchar(20))
+create definer = root@localhost procedure weaponHandleChecker(IN equippingToCharacter varchar(50), IN weaponTypeToEquip varchar(20))
 BEGIN
         DECLARE allowedWeapon varchar(10);
            IF equippingToCharacter IS NOT NULL THEN
