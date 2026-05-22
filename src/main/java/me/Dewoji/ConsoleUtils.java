@@ -143,6 +143,10 @@ public class ConsoleUtils {
         int refinement = scanner.nextInt();
         scanner.nextLine();
 
+        System.out.println("Insert weapon level:");
+        int level = scanner.nextInt();
+        scanner.nextLine();
+
         System.out.println("Insert weapon type:");
         WeaponType weaponType = WeaponType.valueOf(scanner.nextLine().toUpperCase().trim());
 
@@ -156,7 +160,7 @@ public class ConsoleUtils {
         System.out.println("Insert character that has this weapon equipped (press enter if noone):");
         String character = scanner.nextLine();
 
-        return new Weapon(name, rarity, refinement, weaponType, weaponStatType, weaponStatValue, character);
+        return new Weapon(name, rarity, refinement, level, weaponType, weaponStatType, weaponStatValue, character);
     }
 
     public static void saveWeapon(WeaponDataAccessObject weaponDataAccessObject) throws SQLException {

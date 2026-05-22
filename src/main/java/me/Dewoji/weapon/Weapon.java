@@ -7,6 +7,7 @@ public record Weapon(
         String name,
         int rarity,
         int refinement,
+        int level,
         WeaponType weaponType,
         WeaponStatType statType,
         double statValue,
