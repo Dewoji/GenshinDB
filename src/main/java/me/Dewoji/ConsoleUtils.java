@@ -9,6 +9,10 @@ import me.Dewoji.artifact.statEnums.SlotType;
 import me.Dewoji.artifact.statEnums.SubstatType;
 import me.Dewoji.character.Character;
 import me.Dewoji.character.CharacterDataAccessObject;
+import me.Dewoji.weapon.Weapon;
+import me.Dewoji.weapon.WeaponDataAccessObject;
+import me.Dewoji.weapon.weaponEnums.WeaponStatType;
+import me.Dewoji.weapon.weaponEnums.WeaponType;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -66,7 +70,7 @@ public class ConsoleUtils {
 
     public static void saveArtifactToDb(ArtifactDataAccessObject artifactDataAccessObject) throws SQLException {
         artifactDataAccessObject.saveArtifact(getArtifact());
-        System.out.println("Artifact added!");
+        System.out.println("Artifact saved!");
     }
 
     public static void equipArtifact(ArtifactDataAccessObject artifactDataAccessObject) throws SQLException {
@@ -78,6 +82,7 @@ public class ConsoleUtils {
         String name = scanner.nextLine().trim();
 
         artifactDataAccessObject.equipArtifactTo(artifactId, name);
+        System.out.println("Artifact equipped.");
     }
 
     public static void getBestArtifactFromMainStat(ArtifactDataAccessObject artifactDataAccessObject) throws SQLException {
@@ -98,21 +103,76 @@ public class ConsoleUtils {
 
     public static void getJewels(ArtifactDataAccessObject artifactDataAccessObject) throws SQLException {
         List<Jewel> jewels = artifactDataAccessObject.getJewels();
-        for(Jewel j : jewels) {
+        for (Jewel j : jewels) {
             System.out.println(j.toString());
         }
     }
 
-//    private static Character getCharacter() {
-//        System.out.println("Insert character Name");
-//        String name = scanner.nextLine();
-//
-//        System.out.println("");
-//        System.out.println("");
-//        System.out.println("");
-//
-//    }
-    public static void saveCharacter(CharacterDataAccessObject characterDataAccessObject) {
-        characterDataAccessObject.getClass();
+    private static Character getCharacter() {
+        System.out.println("Insert character name:");
+        String name = scanner.nextLine();
+
+        System.out.println("Insert character level:");
+        int level = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.println("Insert character constellation:");
+        int constellation = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.println("Insert type of weapon the character can handle:");
+        WeaponType weaponType = WeaponType.valueOf(scanner.nextLine().toUpperCase().trim());
+
+        return new Character(name, level, constellation, weaponType);
+    }
+
+    public static void saveCharacter(CharacterDataAccessObject characterDataAccessObject) throws SQLException {
+        characterDataAccessObject.saveCharacter(getCharacter());
+        System.out.println("Character saved!");
+    }
+
+    private static Weapon getWeapon() {
+        System.out.println("Insert weapon name:");
+        String name = scanner.nextLine();
+
+        System.out.println("Insert weapon rarity:");
+        int rarity = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.println("Insert weapon refinement:");
+        int refinement = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.println("Insert weapon type:");
+        WeaponType weaponType = WeaponType.valueOf(scanner.nextLine().toUpperCase().trim());
+
+        System.out.println("Insert weapon stat type:");
+        WeaponStatType weaponStatType = WeaponStatType.valueOf(scanner.nextLine().toUpperCase().trim());
+
+        System.out.println("Insert weapon stat value:");
+        double weaponStatValue = scanner.nextDouble();
+        scanner.nextLine();
+
+        System.out.println("Insert character that has this weapon equipped (press enter if noone):");
+        String character = scanner.nextLine();
+
+        return new Weapon(name, rarity, refinement, weaponType, weaponStatType, weaponStatValue, character);
+    }
+
+    public static void saveWeapon(WeaponDataAccessObject weaponDataAccessObject) throws SQLException {
+        weaponDataAccessObject.saveWeapon(getWeapon());
+        System.out.println("Weapon saved!");
+    }
+
+    public static void equipWeapon(WeaponDataAccessObject weaponDataAccessObject) throws SQLException {
+        System.out.println("Insert weapon Id:");
+        int artifactId = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.println("Insert character Name:");
+        String name = scanner.nextLine().trim();
+
+        weaponDataAccessObject.equipWeapon(artifactId, name);
+        System.out.println("Weapon equipped.");
     }
 }

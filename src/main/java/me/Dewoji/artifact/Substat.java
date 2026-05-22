@@ -6,5 +6,4 @@ public record Substat(
         SubstatType substatType,
         double subStatValue
 ) {
-
 }

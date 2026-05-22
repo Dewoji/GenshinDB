@@ -6,7 +6,7 @@ import me.Dewoji.weapon.weaponEnums.WeaponType;
 public record Weapon(
         String name,
         int rarity,
-        int refinment,
+        int refinement,
         WeaponType weaponType,
         WeaponStatType statType,
         double statValue,

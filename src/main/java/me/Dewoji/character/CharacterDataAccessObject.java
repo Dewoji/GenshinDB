@@ -10,7 +10,7 @@ public class CharacterDataAccessObject {
 
     public void saveCharacter(Character c) throws SQLException {
         MySQLConnection mySQLConnection = new MySQLConnection();
-        try(Connection connection = mySQLConnection.connect(); PreparedStatement statement = connection.prepareCall("{CALL insertCharacter(?, ?, ?, ?)}")) {
+        try (Connection connection = mySQLConnection.connect(); PreparedStatement statement = connection.prepareCall("{CALL insertCharacter(?, ?, ?, ?)}")) {
             statement.setString(1, c.name());
             statement.setInt(2, c.level());
             statement.setInt(3, c.constellation());

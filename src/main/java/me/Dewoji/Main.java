@@ -1,6 +1,8 @@
 package me.Dewoji;
 
 import me.Dewoji.artifact.ArtifactDataAccessObject;
+import me.Dewoji.character.CharacterDataAccessObject;
+import me.Dewoji.weapon.WeaponDataAccessObject;
 
 import java.sql.SQLException;
 import java.util.Scanner;
@@ -8,7 +10,10 @@ import java.util.logging.Logger;
 
 public class Main {
     private static final Logger L = Logger.getLogger(Main.class.getName());
-    private static final ArtifactDataAccessObject instance = new ArtifactDataAccessObject();
+
+    private static final ArtifactDataAccessObject INSTANCE_A = new ArtifactDataAccessObject();
+    private static final CharacterDataAccessObject INSTANCE_C = new CharacterDataAccessObject();
+    private static final WeaponDataAccessObject INSTANCE_W = new WeaponDataAccessObject();
 
     public static void main(String[] args) {
         Scanner s = new Scanner(System.in);
@@ -16,32 +21,52 @@ public class Main {
             switch (s.nextLine()) {
                 case "insertA" -> {
                     try {
-                        ConsoleUtils.saveArtifactToDb(instance);
-                        System.out.println("Artifact saved.");
+                        ConsoleUtils.saveArtifactToDb(INSTANCE_A);
                     } catch (SQLException e) {
-                        L.severe("Molto grave"); //TODO
+                        e.printStackTrace(); //TODO proper logging
                     }
                 }
                 case "equipA" -> {
                     try {
-                        ConsoleUtils.equipArtifact(instance);
-                        System.out.println("Artifact equipped.");
+                        ConsoleUtils.equipArtifact(INSTANCE_A);
+
                     } catch (SQLException e) {
-                        throw new RuntimeException(e);
+                        e.printStackTrace();
                     }
                 }
                 case "getBestA" -> {
                     try {
-                        ConsoleUtils.getBestArtifactFromMainStat(instance);
+                        ConsoleUtils.getBestArtifactFromMainStat(INSTANCE_A);
                     } catch (SQLException e) {
-                        throw new RuntimeException(e);
+                        e.printStackTrace();
                     }
                 }
                 case "showJ" -> {
                     try {
-                        ConsoleUtils.getJewels(instance);
+                        ConsoleUtils.getJewels(INSTANCE_A);
                     } catch (SQLException e) {
-                        throw new RuntimeException(e);
+                        e.printStackTrace();
+                    }
+                }
+                case "insertC" -> {
+                    try {
+                        ConsoleUtils.saveCharacter(INSTANCE_C);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
+                case "insertW" -> {
+                    try {
+                        ConsoleUtils.saveWeapon(INSTANCE_W);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
+                case "equipW" -> {
+                    try {
+                        ConsoleUtils.equipWeapon(INSTANCE_W);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
                 }
             }
